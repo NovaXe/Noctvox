@@ -21,16 +21,10 @@
     <ClCompile Include="src\game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\data.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\chunk.cpp">
+    <ClCompile Include="src\rendering.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,22 +32,13 @@
     <ClInclude Include="headers\game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="headers\world.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="headers\util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="headers\voxel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="headers\mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="headers\data.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="headers\chunk.h">
+    <ClInclude Include="headers\rendering.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

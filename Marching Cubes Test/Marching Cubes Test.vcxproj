@@ -118,7 +118,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2main.lib;SDL2.lib;shell32.lib</AdditionalDependencies>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;shell32.lib;glew32.lib;glew32s.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(ProjectDir)build\*.dll" "$(OutDir)"</Command>
@@ -139,28 +139,23 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2main.lib;SDL2.lib;shell32.lib</AdditionalDependencies>
+      <AdditionalDependencies>SDL2main.lib;SDL2.lib;shell32.lib;glew32.lib;glew32s.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(ProjectDir)build\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\chunk.cpp" />
-    <ClCompile Include="src\data.cpp" />
     <ClCompile Include="src\game.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\mesh.cpp" />
-    <ClCompile Include="src\world.cpp" />
+    <ClCompile Include="src\rendering.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="headers\chunk.h" />
-    <ClInclude Include="headers\data.h" />
     <ClInclude Include="headers\game.h" />
     <ClInclude Include="headers\mesh.h" />
+    <ClInclude Include="headers\rendering.h" />
     <ClInclude Include="headers\util.h" />
-    <ClInclude Include="headers\voxel.h" />
-    <ClInclude Include="headers\world.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

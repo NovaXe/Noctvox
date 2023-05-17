@@ -7,13 +7,7 @@
 
 
 namespace noctvox::mesh {
-	class ChunkMesh {
-		
-	};
-
-
-
-
+	
 }
 
 

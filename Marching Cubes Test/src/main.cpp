@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[]) 
 {
-	noctvox::Game* game = new noctvox::Game();
+	
 	
 	
 	

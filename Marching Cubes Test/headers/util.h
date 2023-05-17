@@ -34,7 +34,7 @@ namespace noctvox::util {
 
 		bool inRange(int x_pos, int y_pos, int z_pos) {
 			if (x_pos < 0 && x_pos >= x_size) {
-				return false
+				return false;
 			}
 			if (y_pos < 0 && y_pos >= y_size) {
 				return false;
