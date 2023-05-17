@@ -21,9 +21,6 @@
     <ClCompile Include="src\game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -35,11 +32,11 @@
     <ClInclude Include="headers\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="headers\mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="headers\rendering.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\general.vert.glsl" />
   </ItemGroup>
 </Project>

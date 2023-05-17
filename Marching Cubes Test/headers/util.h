@@ -2,11 +2,7 @@
 
 
 
-namespace noctvox::util {
-
-
-	
-
+namespace util {
 	template <class T> class Array3D {
 	private:
 		int x_size;
