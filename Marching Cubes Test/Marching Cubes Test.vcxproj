@@ -156,6 +156,7 @@
     <ClInclude Include="headers\util.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\general.frag.glsl" />
     <None Include="shaders\general.vert.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
