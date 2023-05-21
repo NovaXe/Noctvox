@@ -49,7 +49,6 @@ bool is_running = true;
 
 
 
-void render();
 
 
 // http://paulbourke.net/geometry/polygonise/
@@ -140,13 +139,16 @@ void initSDL() {
 bool initGL() {
 	//SDL_CaptureMouse(SDL_TRUE);
 	SDL_SetRelativeMouseMode(SDL_TRUE);
-
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 
 // requires float values
 	glClearColor(
-		126.0f / 255.0f,	// Red
-		224.0f / 255.0f,	// Green
-		191.0f / 255.0f,	// Blue
+		100.0f / 255.0f,	// Red
+		104.0f / 255.0f,	// Green
+		104.0f / 255.0f,	// Blue
 		1.0f
 	);
 	return true;
@@ -199,6 +201,7 @@ void initGame() {
 	light_brightness = 0.5f;
 
 	Shader::shader_map["light_shader"] = std::make_unique<Shader>("shaders/general.vert", "shaders/general.frag");
+	Shader::shader_map["line_shader"] = std::make_unique<Shader>("shaders/lines.vert", "shaders/lines.frag");
 
 	camera_pos = { 0,0,0 };
 	camera_front = { 0,0,1 };
@@ -220,7 +223,7 @@ void gameLoop() {
 }
 
 void render() {
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -228,8 +231,8 @@ void render() {
 		world_mesh->update();
 	}
 
-	static float cube_vertices[] = {
-		// vertices				// Texture Coords	// Normal Vectors
+	static std::vector<float> cube_vertices = {
+		// vertices	Texture Coords	Normal Vectors
 		// Back Face
 		0, 0, 0,	0.0f, 0.0f,		0.0f,  0.0f, -1.0f,		// Bottom-left
 		1, 1, 0,	1.0f, 1.0f,		0.0f,  0.0f, -1.0f,		// top-right
@@ -274,16 +277,17 @@ void render() {
 		0, 1, 1,	0.0f, 0.0f,		0.0f,  1.0f,  0.0f 		// bottom-left        
 	};
 
-	static unsigned int selectionVAO = []()mutable ->unsigned int {
-		unsigned int selectionVAO, VBO;
-		glGenVertexArrays(1, &selectionVAO);
+
+	auto generateVAO = [](std::vector<float> vertices) mutable->GLuint {
+		GLuint VAO, VBO;
+		glGenVertexArrays(1, &VAO);
 		glGenBuffers(1, &VBO);
 		//glGenBuffers(1, &EBO);
 
-		glBindVertexArray(selectionVAO);
+		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
 		/*glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);*/
@@ -291,6 +295,7 @@ void render() {
 		//vertex position attribute
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
+		
 
 		//vertex texture coordinates
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
@@ -305,9 +310,10 @@ void render() {
 		//The VAO can also be unbound to prevent other VAO calls from modifying the VAO, doesn't really happen though
 		//In order to modify another VAO you need to call glBIndVertexArray so there isn't much reason to unbind the VAO
 		glBindVertexArray(0);
-		return selectionVAO;
-	}();
-	
+		return VAO;
+	};
+	auto selectionVAO = generateVAO(cube_vertices);
+
 
 	glm::mat4 view = glm::mat4(1.0f);
 	view = glm::lookAt(camera_pos, camera_pos + camera_front, {0,1,0});
@@ -316,27 +322,47 @@ void render() {
 	
 
 	glm::mat4 model = glm::mat4(1.0f);
-
-	auto lighting_shader = Shader::shader_map["light_shader"].get();
-
-
-	lighting_shader->setMat4("projection", perspective_projection);
-
-	lighting_shader->setMat4("view", view);
-
-	lighting_shader->setMat4("model", model);
-
-	lighting_shader->setVec3("lightPos", { 0,16, 0 });
-
-	lighting_shader->setVec3("lightColor", glm::vec3( 1.0,1.0,1.0) * light_brightness);
-
-	lighting_shader->setVec3("viewPos", camera_pos);
+	model = glm::translate(model, { 1,1,1 });
+	static auto lighting_shader = Shader::shader_map["light_shader"].get();
+	static auto line_shader = Shader::shader_map["line_shader"].get();
 
 	lighting_shader->use();
 
+	lighting_shader->setMat4("projection", perspective_projection);
+	lighting_shader->setMat4("view", view);
+	lighting_shader->setMat4("model", model);
+	lighting_shader->setVec3("lightPos", { 0,8, 8 });
+	lighting_shader->setVec3("lightColor", glm::vec3( 1.0,1.0,1.0) * light_brightness);
+	lighting_shader->setVec3("viewPos", camera_pos);
+
+
+
 	glBindVertexArray(selectionVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+
 	
+
+
+	
+	glm::vec3 start  = { 0, 0, 0 };
+	glm::vec3 y_axis = { 0, 1, 0 };
+	glm::vec3 x_axis = { 1, 0, 0 };
+	glm::vec3 z_axis = { 0, 0, 1 };
+
+	
+	static auto line_renderer = std::make_unique<LineRenderer>(line_shader);
+	line_shader->use();
+	line_shader->setMat4("projection", perspective_projection);
+	line_shader->setMat4("view", view);
+
+	line_renderer->draw(start, x_axis, x_axis );
+	line_renderer->draw(start, y_axis, y_axis);
+	line_renderer->draw(start, z_axis, z_axis);
+	glBindVertexArray(0);
+
+
+
 
 	SDL_GL_SwapWindow(window_instance.get());
 
@@ -441,7 +467,6 @@ void mouseMoved(int deltax, int deltay) {
 	if (*pitch < -89.0f)
 		*pitch = -89.0f;
 }
-
 
 void turnCamera(float pitch_delta, float yaw_delta) {
 

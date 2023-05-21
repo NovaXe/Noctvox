@@ -40,6 +40,8 @@ void initGame();
 
 void gameLoop();
 
+void render();
+
 void editWorld(glm::vec3 pos, float value);
 
 void processEvents();

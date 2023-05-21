@@ -51,8 +51,8 @@ private:
 	
 
 	std::vector<Vertex> vertices;
-	GLuint VAO = 0;
-	GLuint VBO = 0;
+	GLuint vao = 0;
+	GLuint vbo = 0;
 };
 
 
@@ -79,4 +79,16 @@ public:
 	void setVec3(const std::string& name, glm::vec3 vec) const;
 
 	void setMat4(const std::string& name, glm::mat4 mat) const;
+};
+
+
+class LineRenderer {
+public:
+	LineRenderer(Shader* shader);
+	~LineRenderer();
+	void draw(const glm::vec3& start, const glm::vec3& end, const glm::vec3& color);
+private:
+	GLuint vao;
+	Shader* shader;
+
 };

@@ -23,11 +23,11 @@
 
 
 Mesh::Mesh() {
-	glGenVertexArrays(1, &this->VAO);
-	glGenBuffers(1, &this->VBO);
+	glGenVertexArrays(1, &this->vao);
+	glGenBuffers(1, &this->vbo);
 
-	glBindVertexArray(this->VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glBindVertexArray(this->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
 	glBufferData(GL_ARRAY_BUFFER, this->buffer_vertex_count * sizeof(Vertex), this->vertices.data(), GL_DYNAMIC_DRAW);
 
@@ -42,8 +42,8 @@ Mesh::Mesh() {
 
 
 void Mesh::expandBuffer() {
-	glBindVertexArray(this->VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glBindVertexArray(this->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	//GLint size = 0;
 	//glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
 	this->buffer_vertex_count *= 2;
@@ -52,8 +52,8 @@ void Mesh::expandBuffer() {
 }
 
 void Mesh::update() {
-	glBindVertexArray(this->VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
+	glBindVertexArray(this->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)0, sizeof(Vertex) * this->vertex_count, this->vertices.data());
 	this->vertices.clear();
 	this->needsRegen = false;
@@ -73,6 +73,11 @@ void Mesh::addVertex(Vertex& vertex)
 
 void Mesh::draw(Shader* shader) {
 	shader->use();
+	glBindVertexArray(this->vao);
+	glDrawArrays(GL_TRIANGLES, 0, this->vertex_count);
+	glBindVertexArray(0);
+	glUseProgram(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 }
 
@@ -165,25 +170,77 @@ GLuint Shader::compile(const std::string& vertex_path, const std::string& fragme
 
 
 void Shader::use() {
-		glUseProgram(this->id);
-		//CurrentShader = std::make_unique<Shader>(this);
+	glUseProgram(this->id);
+	//CurrentShader = std::make_unique<Shader>(this);
 		
-	}
+}
 
-	void Shader::setBool(const std::string& name, bool value) const {
+void Shader::setBool(const std::string& name, bool value) const {
 
-	}
-	void Shader::setInt(const std::string& name, int value) const {
+}
+void Shader::setInt(const std::string& name, int value) const {
 
-	}
-	void Shader::setFloat(const std::string& name, float vlaue) const {
+}
+void Shader::setFloat(const std::string& name, float vlaue) const {
 
-	}
+}
 
-	void Shader::setVec3(const std::string& name, glm::vec3 vec) const {
-		glUniform3fv(glGetUniformLocation(this->id, name.c_str()), 1, glm::value_ptr(vec));
-	}
+void Shader::setVec3(const std::string& name, glm::vec3 vec) const {
+	glUniform3fv(glGetUniformLocation(this->id, name.c_str()), 1, glm::value_ptr(vec));
+}
 
-	void Shader::setMat4(const std::string& name, glm::mat4 mat) const {
-		glUniformMatrix4fv(glGetUniformLocation(this->id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
-	}
+void Shader::setMat4(const std::string& name, glm::mat4 mat) const {
+	glUniformMatrix4fv(glGetUniformLocation(this->id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
+}
+
+
+
+LineRenderer::LineRenderer(Shader* shader) : shader(shader)
+{
+	GLuint VBO;
+
+	float vertices[] = {
+			0.0f, 0.0f, 0.0f,
+			1.0f, 1.0f, 1.0f
+	};
+
+	glGenVertexArrays(1, &this->vao);
+	glGenBuffers(1, &VBO);
+	//glGenBuffers(1, &EBO);
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+
+	glBindVertexArray(this->vao);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+LineRenderer::~LineRenderer() {
+	glDeleteVertexArrays(1, &this->vao);
+}
+
+void LineRenderer::draw(const glm::vec3& start, const glm::vec3& end, const glm::vec3& color)
+{
+	this->shader->use();
+
+	glm::vec3 dif = end - start;
+
+	glm::mat4 model(1.0f);
+	model = glm::translate(model, start);
+	model = glm::scale(model, dif);
+	shader->setMat4("model", model);
+	shader->setVec3("color", color);
+
+	glBindVertexArray(this->vao);
+	//glLineWidth(10);
+	glDrawArrays(GL_LINES, 0, 2);
+	glBindVertexArray(0);
+
+
+}
