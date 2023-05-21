@@ -16,6 +16,8 @@ namespace util {
 			this->arr = new T[x_size * y_size * z_size];
 		}
 
+		Array3D() = default;
+
 
 		T& at(int x_pos, int y_pos, int z_pos) {
 			if (inRange(x_pos, y_pos, z_pos)) {

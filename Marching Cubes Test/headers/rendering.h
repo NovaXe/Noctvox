@@ -6,7 +6,11 @@
 #include <gl\glu.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
+#include <unordered_map>
+#include <memory>
 
+#include <glm/glm.hpp>
 
 
 
@@ -14,3 +18,65 @@
 // I will design this to work in a way that would let me swap apis if I wanted to
 // Keep everything adstracted away
 
+
+class Shader;
+class Mesh;
+
+enum VertexAttrib {
+	ATTRIB_POS,
+	ATTRIB_NORM,
+	ATTRIB_UV
+};
+
+
+struct Vertex {
+	glm::vec3 pos;
+	glm::vec3 normal;
+	glm::vec2 uv;
+};
+
+class Mesh {
+public:
+	Mesh();
+	void update();
+	void addVertex(Vertex& vertex);
+	void draw(Shader* shader);
+	bool needsRegen = true;
+
+
+private:
+	void expandBuffer();
+	GLint buffer_vertex_count = 1536;
+	int vertex_count = 0;
+	
+
+	std::vector<Vertex> vertices;
+	GLuint VAO = 0;
+	GLuint VBO = 0;
+};
+
+
+
+class Shader {
+private:
+	GLuint compile(const std::string& vertex_path, const std::string& fragment_path);
+	GLuint id;
+public:
+	Shader(const std::string& vertex_path, const std::string& fragment_path);
+	//Shader(const std::string& vertex_path, const std::string& fragment_path);
+	Shader() = default;
+
+	static std::unordered_map<std::string, std::unique_ptr<Shader>> shader_map;
+
+	void use();
+
+	void setBool(const std::string& name, bool value) const;
+
+	void setInt(const std::string& name, int value) const;
+
+	void setFloat(const std::string& name, float value) const;
+
+	void setVec3(const std::string& name, glm::vec3 vec) const;
+
+	void setMat4(const std::string& name, glm::mat4 mat) const;
+};
