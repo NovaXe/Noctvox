@@ -14,15 +14,15 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/noise.hpp>
 
-
+#include <array>
 #include <fstream>
 #include <string>
 #include <memory>
 
 
-
-util::Array3D<float> point_field;
+std::unique_ptr<util::Array3D<float>> point_field;
 GLuint program_id;
 SDL_Event e;
 
@@ -141,7 +141,7 @@ bool initGL() {
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+	glCullFace(GL_FRONT);
 	glFrontFace(GL_CCW);
 
 // requires float values
@@ -196,7 +196,30 @@ void printShaderLog(GLuint shader)
 
 
 void initGame() {
-	point_field = util::Array3D<float>(17, 17, 17);
+	const int world_size = 64;
+
+	point_field = std::make_unique<util::Array3D<float>>(world_size+1, world_size+1, world_size+1);
+	
+	for (int z = 0; z < point_field->zSize() - 1; z++) {
+		for (int y = 0; y < point_field->ySize() - 1; y++) {
+			for (int x = 0; x < point_field->xSize() - 1; x++) {
+				const float div = 16.f;
+				auto noise = glm::perlin(glm::vec3(x/ div, y/ div, z/ div));
+				noise = abs(noise);
+				point_field->at(x, y, z) = noise;
+
+
+			}
+		}
+	}
+
+
+	//point_field->at(2, 2, 2) = 1.0;
+	//point_field->at(2, 2, 3) = 0.6;
+	//point_field->at(2, 2, 4) = 0.6;
+	//point_field->at(2, 2, 5) = 0.6;
+	//point_field->at(3, 2, 5) = 0.6;
+	//point_field->at(3, 3, 5) = 0.6;
 	world_mesh = std::make_unique<Mesh>();
 	light_brightness = 0.5f;
 
@@ -227,9 +250,6 @@ void render() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-	if (world_mesh->needsRegen) {
-		world_mesh->update();
-	}
 
 	static std::vector<float> cube_vertices = {
 		// vertices	Texture Coords	Normal Vectors
@@ -321,25 +341,52 @@ void render() {
 	static glm::mat4 perspective_projection = glm::perspective(glm::radians(80.0f), ((float)width / (float)height), 0.1f, 500.0f);
 	
 
+	
+
+	
+
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, { 1,1,1 });
+	//model = glm::translate(model, { 1,1,1 });
 	static auto lighting_shader = Shader::shader_map["light_shader"].get();
 	static auto line_shader = Shader::shader_map["line_shader"].get();
+
+	// Check if the chunk mesh needs to be updated (mesh->isOld)
+	// IE it isn't in sync with the field data
+	// If so rebuild the mesh
+	// otherwise do nothing and draw with the existing mesh
+	// after rebuilding the mesh update the vertex array and mark it as not old
+	// mark the mesh as old whenever the chunk is modified
 
 	lighting_shader->use();
 
 	lighting_shader->setMat4("projection", perspective_projection);
 	lighting_shader->setMat4("view", view);
 	lighting_shader->setMat4("model", model);
-	lighting_shader->setVec3("lightPos", { 0,8, 8 });
-	lighting_shader->setVec3("lightColor", glm::vec3( 1.0,1.0,1.0) * light_brightness);
+	lighting_shader->setVec3("lightPos", { -8,32, 32 });
+	lighting_shader->setVec3("lightColor", glm::vec3(1.0, 1.0, 1.0)* light_brightness);
 	lighting_shader->setVec3("viewPos", camera_pos);
 
 
+	checkMesh();
+	world_mesh->draw(lighting_shader);
 
-	glBindVertexArray(selectionVAO);
+
+
+
+	/*lighting_shader->use();
+
+	lighting_shader->setMat4("projection", perspective_projection);
+	lighting_shader->setMat4("view", view);
+	lighting_shader->setMat4("model", model);
+	lighting_shader->setVec3("lightPos", { 0,8, 8 });
+	lighting_shader->setVec3("lightColor", glm::vec3( 1.0,1.0,1.0) * light_brightness);
+	lighting_shader->setVec3("viewPos", camera_pos);*/
+
+
+
+	/*glBindVertexArray(selectionVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
+	glBindVertexArray(0);*/
 
 	
 
@@ -370,9 +417,202 @@ void render() {
 
 
 void editWorld(glm::vec3 pos, float value) {
-	point_field.at(pos.x, pos.y, pos.z) = value;
-
+	point_field->at(pos.x, pos.y, pos.z) = value;
+	
 }
+
+void checkMesh() {
+	if (world_mesh->isOld) {
+		buildMesh();
+		world_mesh->update();
+		world_mesh->isOld = false;
+	}
+}
+
+/*
+	   4--------5     *---4----*
+	  /|       /|    /|       /|
+	 / |      / |   7 |      5 |
+	/  |     /  |  /  8     /  9
+   7--------6   | *----6---*   |
+   |   |    |   | |   |    |   |
+   |   0----|---1 |   *---0|---*
+   |  /     |  /  11 /     10 /
+   | /      | /   | 3      | 1
+   |/       |/    |/       |/
+   3--------2     *---2----*
+
+*/
+
+
+void buildMesh() {
+	for (int z = 0; z < point_field->zSize() - 1; z++) {
+		for (int y = 0; y < point_field->ySize() - 1; y++) {
+			for (int x = 0; x < point_field->xSize() - 1; x++) {
+	//for (int x = 0; x < point_field->xSize() - 1; x++) {
+	//	for (int y = 0; y < point_field->ySize() - 1;  y++) {
+	//		for (int z = 0; z < point_field->zSize() - 1; z++) {
+
+				std::array<float, 8> cell = fetchCell(point_field.get(), x, y, z);
+				static float isolevel = 0.5;
+
+				
+
+				unsigned int cube_index = 0;
+				if (cell[0] < isolevel) cube_index |= 1;
+				if (cell[1] < isolevel) cube_index |= 2;
+				if (cell[2] < isolevel) cube_index |= 4;
+				if (cell[3] < isolevel) cube_index |= 8;
+				if (cell[4] < isolevel) cube_index |= 16;
+				if (cell[5] < isolevel) cube_index |= 32;
+				if (cell[6] < isolevel) cube_index |= 64;
+				if (cell[7] < isolevel) cube_index |= 128;
+
+				// 12 bit number that contains info on what edges are split by the surface
+				// 1 bit for every edge in the cell
+				// 
+
+				std::array<glm::vec3, 12> vert_list = {};
+
+ 				auto edge_flags = edgeTable[cube_index];
+				if (edge_flags == 0) {
+					continue;
+				}
+				
+
+				if (edge_flags & 1) 
+					vert_list[0] = interpolateEdgePoint(isolevel, cell_points[0], cell_points[1], cell[0], cell[1]);
+				if (edge_flags & 2)
+					vert_list[1] = interpolateEdgePoint(isolevel, cell_points[1], cell_points[2], cell[1], cell[2]);
+				if (edge_flags & 4)
+					vert_list[2] = interpolateEdgePoint(isolevel, cell_points[2], cell_points[3], cell[2], cell[3]);
+				if (edge_flags & 8)
+					vert_list[3] = interpolateEdgePoint(isolevel, cell_points[3], cell_points[0], cell[3], cell[0]);
+				if (edge_flags & 16)
+					vert_list[4] = interpolateEdgePoint(isolevel, cell_points[4], cell_points[5], cell[4], cell[5]);
+				if (edge_flags & 32)
+					vert_list[5] = interpolateEdgePoint(isolevel, cell_points[5], cell_points[6], cell[5], cell[6]);
+				if (edge_flags & 64)
+					vert_list[6] = interpolateEdgePoint(isolevel, cell_points[6], cell_points[7], cell[6], cell[7]);
+				if (edge_flags & 128)
+					vert_list[7] = interpolateEdgePoint(isolevel, cell_points[7], cell_points[4], cell[7], cell[4]);
+				if (edge_flags & 256)
+					vert_list[8] = interpolateEdgePoint(isolevel, cell_points[0], cell_points[4], cell[0], cell[4]);
+				if (edge_flags & 512)
+					vert_list[9] = interpolateEdgePoint(isolevel, cell_points[1], cell_points[5], cell[1], cell[5]);
+				if (edge_flags & 1024)
+					vert_list[10] = interpolateEdgePoint(isolevel, cell_points[2], cell_points[6], cell[2], cell[6]);
+				if (edge_flags & 2048)
+					vert_list[11] = interpolateEdgePoint(isolevel, cell_points[3], cell_points[7], cell[3], cell[7]);
+
+				//std::vector<glm::vec3> points;
+				
+				if (z < 13) {
+					int i = 0;
+					//continue;
+				}
+
+
+				// shift the vertices to where the should be relative to the point field
+				// before this they are in local space
+				auto current_pos = glm::vec3(x, y, z);
+				for (auto& vert : vert_list) {
+					vert = vert + current_pos;
+				}
+
+				// output vertices
+				std::vector<Vertex> vertices;
+
+				
+
+				auto vertex_sequence = triTable[cube_index];
+				int number_of_triangles = 0;
+				for (int i = 0; vertex_sequence[i] != -1; i += 3, number_of_triangles++) {
+
+					glm::vec3 triangle[] = {
+						vert_list[vertex_sequence[i]],
+						vert_list[vertex_sequence[i + 1]],
+						vert_list[vertex_sequence[i + 2]]
+					};
+
+					if (z == 1) {
+						int i = 0;
+					}
+
+
+					glm::vec3 face_normal = glm::cross(triangle[1] - triangle[0], triangle[2] - triangle[0]);
+					face_normal = glm::normalize(face_normal); 
+					//face_normal = -1 * face_normal;
+
+					// need to figure out how to calculate the normals that face normal to the surface for a triangle
+					// obv cross the 
+					for (auto& pos : triangle) {
+						Vertex v(pos, face_normal, { 0, 0 });
+						vertices.push_back(v);
+					}
+					
+
+
+					/*points.push_back(vert_list[vertex_sequence[i]]);
+					points.push_back(vert_list[vertex_sequence[i + 1]]);
+					points.push_back(vert_list[vertex_sequence[i + 2]]);*/
+
+				}
+
+				/*for (auto& point : points) {
+					Vertex vertex;
+					vertex.pos = point;
+					vertex.normal = {0,0,0}
+
+					world_mesh->addVertex()
+				}*/
+
+				
+
+				for (auto& vertex : vertices) {
+					world_mesh->addVertex(vertex);
+					//fmt::printf("z=%d", z);
+				}
+			}
+		}
+	}
+}
+
+
+glm::vec3 interpolateEdgePoint(float isolevel, glm::ivec3 p1, glm::ivec3 p2, float p1_val, float p2_val) {
+	
+	glm::vec3 point;
+	if (abs(isolevel - p1_val) < 0.00001) {
+		return p1;
+	}
+	if (abs(isolevel - p2_val) < 0.00001) {
+		return p2;
+	}
+	if (abs(p1_val - p2_val) < 0.00001) {
+		return p1;
+	}
+
+	float mu = (isolevel - p1_val) / (p2_val - p1_val);
+	point.x = p1.x + mu * (p2.x - p1.x);
+	point.y = p1.y + mu * (p2.y - p1.y);
+	point.z = p1.z + mu * (p2.z - p1.z);
+
+	return point;
+}
+
+
+
+
+std::array<float, 8> fetchCell(util::Array3D<float>* field, int x, int y, int z) {
+	std::array<float, 8> vals;
+
+	for (int i = 0; i < 8; i++) {
+		auto point_offset = cell_points[i];
+		vals[i] = field->at(x + point_offset.x, y+point_offset.y, z+point_offset.z);
+	}
+	return vals;
+}
+
 
 
 

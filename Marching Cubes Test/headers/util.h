@@ -13,11 +13,28 @@ namespace util {
 
 	public:
 		Array3D(int x_size, int y_size, int z_size) : x_size(x_size), y_size(y_size), z_size(z_size) {
-			this->arr = new T[x_size * y_size * z_size];
+			this->arr = new T[x_size * y_size * z_size]();
 		}
 
-		Array3D() = default;
+		Array3D() : x_size(0), y_size(0), z_size(0) {
+			this->arr = nullptr;
+		}
 
+		~Array3D() {
+			delete[] this->arr;
+		}
+
+		int xSize() {
+			return this->x_size;
+		}
+
+		int ySize() {
+			return this->y_size;
+		}
+
+		int zSize() {
+			return this->z_size;
+		}
 
 		T& at(int x_pos, int y_pos, int z_pos) {
 			if (inRange(x_pos, y_pos, z_pos)) {

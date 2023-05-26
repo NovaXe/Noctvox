@@ -30,6 +30,7 @@ enum VertexAttrib {
 
 
 struct Vertex {
+	Vertex(glm::vec3 pos, glm::vec3 normal, glm::vec2 uv) : pos(pos), normal(normal), uv(uv) {}
 	glm::vec3 pos;
 	glm::vec3 normal;
 	glm::vec2 uv;
@@ -41,7 +42,7 @@ public:
 	void update();
 	void addVertex(Vertex& vertex);
 	void draw(Shader* shader);
-	bool needsRegen = true;
+	bool isOld = true;
 
 
 private:

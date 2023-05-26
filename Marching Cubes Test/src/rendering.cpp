@@ -29,12 +29,17 @@ Mesh::Mesh() {
 	glBindVertexArray(this->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 
-	glBufferData(GL_ARRAY_BUFFER, this->buffer_vertex_count * sizeof(Vertex), this->vertices.data(), GL_DYNAMIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, this->buffer_vertex_count * sizeof(Vertex), this->vertices.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 256000*4 * sizeof(Vertex), this->vertices.data(), GL_DYNAMIC_DRAW);
 
-	glEnableVertexAttribArray(0);
+
 	glVertexAttribPointer(ATTRIB_POS, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+	glEnableVertexAttribArray(ATTRIB_POS);
 	glVertexAttribPointer(ATTRIB_NORM, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+	glEnableVertexAttribArray(ATTRIB_NORM);
 	glVertexAttribPointer(ATTRIB_UV, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(ATTRIB_UV);
+
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -44,10 +49,12 @@ Mesh::Mesh() {
 void Mesh::expandBuffer() {
 	glBindVertexArray(this->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-	//GLint size = 0;
-	//glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
-	this->buffer_vertex_count *= 2;
-	glBufferData(GL_ARRAY_BUFFER, this->buffer_vertex_count, this->vertices.data(), GL_DYNAMIC_DRAW);
+	////GLint size = 0;
+	////glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	//this->buffer_vertex_count *= 2;
+	//glBufferData(GL_ARRAY_BUFFER, this->buffer_vertex_count * sizeof(Vertex), this->vertices.data(), GL_DYNAMIC_DRAW);
+
+	glBufferData(GL_ARRAY_BUFFER, this->vertex_count * sizeof(Vertex), this->vertices.data(), GL_DYNAMIC_DRAW);
 
 }
 
@@ -55,8 +62,13 @@ void Mesh::update() {
 	glBindVertexArray(this->vao);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
 	glBufferSubData(GL_ARRAY_BUFFER, (GLintptr)0, sizeof(Vertex) * this->vertex_count, this->vertices.data());
+	
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	this->vertex_count = this->vertices.size();
 	this->vertices.clear();
-	this->needsRegen = false;
+	
 }
 
 
@@ -64,7 +76,7 @@ void Mesh::addVertex(Vertex& vertex)
 {
 	this->vertices.push_back(vertex);
 	if (this->vertices.size() > this->buffer_vertex_count) {
-		this->expandBuffer();
+		//this->expandBuffer();
 	}
 	this->vertex_count++;
 	
